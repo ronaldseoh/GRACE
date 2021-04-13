@@ -486,7 +486,7 @@ def main():
             test_dataloaders_list.append(test_dataloader)
             test_examples_list.append(test_examples)
            
-            logger.info("  Domain", str(td))
+            logger.info("  Domain %d", td)
             logger.info("    Num examples = %d", len(test_examples))
             logger.info("    Batch size = %d", args.eval_batch_size)
     else:
@@ -520,12 +520,12 @@ def main():
                 for ed, eval_file_name in enumerate(args.valid_file):
                     file_path = os.path.join(args.data_dir, eval_file_name)
                     eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](
-                        args, tokenizer, eval_file_name, labels=label_list, set_type="val")
+                        args, tokenizer, file_path, labels=label_list, set_type="val")
                         
                     eval_dataloaders_list.append(eval_dataloader)
                     eval_examples_list.append(eval_examples)
 
-                    logger.info("  Domain", str(ed))
+                    logger.info("  Domain %d", ed)
                     logger.info("    Num examples = %d", len(eval_examples))
                     logger.info("    Batch size = %d", args.eval_batch_size)
             else:
@@ -547,7 +547,7 @@ def main():
             if args.do_eval:
                 if data_name.startswith('joint'):
                     for ed, eval_dataloader in enumerate(eval_dataloaders_list):
-                        logger.info("  Domain", str(ed))
+                        logger.info("  Domain %d", ed)
                         eval_epoch(model, eval_dataloader, label_list, device)
                 else:
                     eval_epoch(model, eval_dataloader, label_list, device)
@@ -556,7 +556,7 @@ def main():
             logger.info("***Results on test***")
             if data_name.startswith('joint'):
                 for td, test_dataloader in enumerate(test_dataloaders_list):
-                    logger.info("  Domain", str(td))
+                    logger.info("  Domain %d", td)
                     eval_epoch(model, test_dataloader, label_list, device)
             else:
                 eval_epoch(model, test_dataloader, label_list, device)
@@ -564,7 +564,7 @@ def main():
         if args.init_model:
             if data_name.startswith('joint'):
                 for td, test_dataloader in enumerate(test_dataloaders_list):
-                    logger.info("  Domain", str(td))
+                    logger.info("  Domain %d" td)
                     eval_epoch(model, test_dataloader, label_list, device)
             else:
                 eval_epoch(model, test_dataloader, label_list, device)
@@ -577,7 +577,7 @@ def main():
                 
                 if data_name.startswith('joint'):
                     for td, test_dataloader in enumerate(test_dataloaders_list):
-                        logger.info("  Domain", str(td))
+                        logger.info("  Domain %d" td)
                         eval_epoch(model, test_dataloader, label_list, device)
                 else:
                     eval_epoch(model, test_dataloader, label_list, device)
