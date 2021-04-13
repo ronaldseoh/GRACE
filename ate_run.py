@@ -413,7 +413,10 @@ def main():
 
     if data_name in DATASET_DICT:
         args.train_file = DATASET_DICT[data_name]["train_file"]
-        args.valid_file = DATASET_DICT[data_name]["valid_file"]
+
+        if args.do_eval:
+            args.valid_file = DATASET_DICT[data_name]["valid_file"]
+
         args.test_file = DATASET_DICT[data_name]["test_file"]
     else:
         assert args.train_file is not None
@@ -458,14 +461,16 @@ def main():
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
 
-        file_path = os.path.join(args.data_dir, args.valid_file)
-        eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
-                                                                            labels=label_list, set_type="val")
-        logger.info("***** Running evaluation *****")
-        logger.info("  Num examples = %d", len(eval_examples))
-        logger.info("  Batch size = %d", args.eval_batch_size)
+        if args.do_eval:
+            file_path = os.path.join(args.data_dir, args.valid_file)
+            eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
+                                                                                labels=label_list, set_type="val")
+            logger.info("***** Running evaluation *****")
+            logger.info("  Num examples = %d", len(eval_examples))
+            logger.info("  Batch size = %d", args.eval_batch_size)
 
         global_step = 0
+
         for epoch in range(args.num_train_epochs):
             tr_loss, global_step = train_epoch(epoch, args, model, train_dataloader, device, n_gpu, tokenizer,
                                                optimizer, global_step, num_train_optimization_steps)
@@ -473,10 +478,9 @@ def main():
             save_model(epoch, args, model)
             eval_epoch(model, eval_dataloader, label_list, device)
 
-        logger.info("***Results on test***")
-        eval_epoch(model, test_dataloader, label_list, device)
-    elif args.do_eval:
-        eval_epoch(model, test_dataloader, label_list, device)
+        if args.do_eval:
+            logger.info("***Results on test***")
+            eval_epoch(model, test_dataloader, label_list, device)
     else:
         if args.init_model:
             eval_epoch(model, test_dataloader, label_list, device)
