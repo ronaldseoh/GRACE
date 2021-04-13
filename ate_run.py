@@ -564,7 +564,7 @@ def main():
         if args.init_model:
             if data_name.startswith('joint'):
                 for td, test_dataloader in enumerate(test_dataloaders_list):
-                    logger.info("  Domain %d" td)
+                    logger.info("  Domain %d", td)
                     eval_epoch(model, test_dataloader, label_list, device)
             else:
                 eval_epoch(model, test_dataloader, label_list, device)
@@ -577,7 +577,7 @@ def main():
                 
                 if data_name.startswith('joint'):
                     for td, test_dataloader in enumerate(test_dataloaders_list):
-                        logger.info("  Domain %d" td)
+                        logger.info("  Domain %d", td)
                         eval_epoch(model, test_dataloader, label_list, device)
                 else:
                     eval_epoch(model, test_dataloader, label_list, device)
