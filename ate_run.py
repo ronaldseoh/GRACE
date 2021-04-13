@@ -416,8 +416,7 @@ def main():
 
         if args.do_eval:
             args.valid_file = DATASET_DICT[data_name]["valid_file"]
-
-        args.test_file = DATASET_DICT[data_name]["test_file"]
+            args.test_file = DATASET_DICT[data_name]["test_file"]
     else:
         assert args.train_file is not None
         assert args.valid_file is not None
