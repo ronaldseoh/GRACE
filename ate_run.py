@@ -412,7 +412,7 @@ for i in range(10):
 # Joint SemEval 2014 domain == SemEval 2014 Laptop + Restaurants
 DATASET_DICT["joint_semeval2014"] = {
     "train_file": "joint_2014_train.txt",
-    "test_file": ["laptops_2014_test.gold.txt", "restaurants_2014_test.gold.txt"]},
+    "test_file": ["laptops_2014_test.gold.txt", "restaurants_2014_test.gold.txt"],
     "valid_file": ["laptops_2014_trial.txt", "restaurants_2014_trial.txt"]}
 
 def main():
