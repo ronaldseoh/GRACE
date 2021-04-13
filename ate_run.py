@@ -440,13 +440,14 @@ def main():
     model = init_model(args, num_labels, task_config, device, n_gpu)
 
     # Generate test dataset
-    file_path = os.path.join(args.data_dir, args.test_file)
-    
-    test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
-                                                                        labels=label_list, set_type="test")
-    logger.info("***** Running test *****")
-    logger.info("  Num examples = %d", len(test_examples))
-    logger.info("  Batch size = %d", args.eval_batch_size)
+    if args.do_eval:
+        file_path = os.path.join(args.data_dir, args.test_file)
+        
+        test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
+                                                                            labels=label_list, set_type="test")
+        logger.info("***** Running test *****")
+        logger.info("  Num examples = %d", len(test_examples))
+        logger.info("  Batch size = %d", args.eval_batch_size)
 
     if args.do_train:
         num_train_optimization_steps = (int(len(
