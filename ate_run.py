@@ -51,6 +51,7 @@ def parse_input_parameter():
                         help="The maximum total input sequence length after WordPiece tokenization. \nSequences longer than this will be truncated, and sequences shorter \nthan this will be padded.")
     parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
     parser.add_argument("--do_eval", action='store_true', help="Whether to run eval on the dev set.")
+    parser.add_argument("--do_test", action='store_true', help="Whether to run eval on the TEST set.")
     parser.add_argument("--do_lower_case", action='store_true', help="Set this flag if you are using an uncased model.")
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
@@ -384,15 +385,34 @@ DATALOADER_DICT = {}
 DATALOADER_DICT["ate"] = {"train":dataloader_train, "eval":dataloader_val}
 
 DATASET_DICT={}
-DATASET_DICT["lap"] = {"train_file":"laptops_2014_train.txt", "valid_file":"laptops_2014_trial.txt", "test_file":"laptops_2014_test.gold.txt"}
-DATASET_DICT["res"] = {"train_file":"restaurants_union_train.txt", "valid_file":"restaurants_union_trial.txt", "test_file":"restaurants_union_test.gold.txt"}
-for i in ["2014", "2015", "2016"]:
-    DATASET_DICT["res{}".format(i)] = {"train_file": "restaurants_{}_train.txt".format(i), "valid_file": "restaurants_{}_trial.txt".format(i), "test_file": "restaurants_{}_test.gold.txt".format(i)}
-for i in range(10):
-    DATASET_DICT["twt{}".format(i+1)] = {"train_file":"twitter_{}_train.txt".format(i+1), "valid_file":"twitter_{}_test.gold.txt".format(i+1), "test_file":"twitter_{}_test.gold.txt".format(i+1)}
 
-DATASET_DICT["joint"] = {
-    "train_file":"joint_2014_train.txt"}
+DATASET_DICT["lap"] = {
+    "train_file": "laptops_2014_train.txt",
+    "valid_file": "laptops_2014_trial.txt",
+    "test_file": "laptops_2014_test.gold.txt"}
+
+DATASET_DICT["res"] = {
+    "train_file": "restaurants_union_train.txt",
+    "valid_file": "restaurants_union_trial.txt",
+    "test_file":"restaurants_union_test.gold.txt"}
+
+for i in ["2014", "2015", "2016"]:
+    DATASET_DICT["res{}".format(i)] = {
+        "train_file": "restaurants_{}_train.txt".format(i),
+        "valid_file": "restaurants_{}_trial.txt".format(i),
+        "test_file": "restaurants_{}_test.gold.txt".format(i)}
+
+for i in range(10):
+    DATASET_DICT["twt{}".format(i+1)] = {
+        "train_file":"twitter_{}_train.txt".format(i+1),
+        "valid_file":"twitter_{}_test.gold.txt".format(i+1),
+        "test_file":"twitter_{}_test.gold.txt".format(i+1)}
+
+# Joint SemEval 2014 domain == SemEval 2014 Laptop + Restaurants
+DATASET_DICT["joint_semeval2014"] = {
+    "train_file": "joint_2014_train.txt",
+    "test_file": ["laptops_2014_test.gold.txt", "restaurants_2014_test.gold.txt"]}
+    "valid_file": ["laptops_2014_trial.txt", "restaurants_2014_trial.txt"]}
 
 def main():
     global logger
@@ -412,17 +432,26 @@ def main():
     data_name = args.data_name.lower()
 
     if data_name in DATASET_DICT:
-        args.train_file = DATASET_DICT[data_name]["train_file"]
+        if args.do_train:
+            args.train_file = DATASET_DICT[data_name]["train_file"]
 
         if args.do_eval:
             args.valid_file = DATASET_DICT[data_name]["valid_file"]
+            
+        if args.do_test:
             args.test_file = DATASET_DICT[data_name]["test_file"]
     else:
-        assert args.train_file is not None
-        assert args.valid_file is not None
-        assert args.test_file is not None
+        if args.do_train:
+            assert args.train_file is not None
+        
+        if args.do_eval:
+            assert args.valid_file is not None
+            
+        if args.do_test:
+            assert args.test_file is not None
 
     task_name = args.task_name.lower()
+
     if task_name not in DATALOADER_DICT:
         raise ValueError("Task not found: %s" % (task_name))
 
@@ -437,15 +466,33 @@ def main():
     logging.info("Labels are = %s:", "["+", ".join(label_list)+"]")
     num_labels = len(label_list)
 
+    # Initialize the model
     model = init_model(args, num_labels, task_config, device, n_gpu)
 
     # Generate test dataset
-    if args.do_eval:
+    logger.info("***** Running test *****")
+
+    if data_name.startswith('joint'):
+        # May need to perform testing on more than one domain
+        test_dataloaders_list = []
+        test_examples_list = []
+
+        for td, test_file_name in enumerate(args.test_file):
+            file_path = os.path.join(args.data_dir, test_file_name)
+            test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](
+                args, tokenizer, file_path, labels=label_list, set_type="test")
+
+            test_dataloaders_list.append(test_dataloader)
+            test_examples_list.append(test_examples)
+           
+            logger.info("  Domain", str(td))
+            logger.info("    Num examples = %d", len(test_examples))
+            logger.info("    Batch size = %d", args.eval_batch_size)
+    else:
         file_path = os.path.join(args.data_dir, args.test_file)
-        
-        test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
-                                                                            labels=label_list, set_type="test")
-        logger.info("***** Running test *****")
+        test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](
+            args, tokenizer, file_path, labels=label_list, set_type="test")
+
         logger.info("  Num examples = %d", len(test_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
 
@@ -454,6 +501,7 @@ def main():
             train_dataloader) + args.gradient_accumulation_steps - 1) / args.gradient_accumulation_steps) * args.num_train_epochs
         if args.local_rank != -1:
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
+
         optimizer = prep_optimizer(args, model, num_train_optimization_steps)
 
         logger.info("***** Running training *****")
@@ -462,12 +510,30 @@ def main():
         logger.info("  Num steps = %d", num_train_optimization_steps)
 
         if args.do_eval:
-            file_path = os.path.join(args.data_dir, args.valid_file)
-            eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
-                                                                                labels=label_list, set_type="val")
             logger.info("***** Running evaluation *****")
-            logger.info("  Num examples = %d", len(eval_examples))
-            logger.info("  Batch size = %d", args.eval_batch_size)
+            if data_name.startswith('joint'):
+                # May need to perform evaluation on more than one domain
+                eval_dataloaders_list = []
+                eval_examples_list = []
+
+                for ed, eval_file_name in enumerate(args.valid_file):
+                    file_path = os.path.join(args.data_dir, eval_file_name)
+                    eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](
+                        args, tokenizer, eval_file_name, labels=label_list, set_type="val")
+                        
+                    eval_dataloaders_list.append(eval_dataloader)
+                    eval_examples_list.append(eval_examples)
+
+                    logger.info("  Domain", str(ed))
+                    logger.info("    Num examples = %d", len(eval_examples))
+                    logger.info("    Batch size = %d", args.eval_batch_size)
+            else:
+                file_path = os.path.join(args.data_dir, args.valid_file)
+                eval_dataloader, eval_examples = DATALOADER_DICT[task_name]["eval"](
+                    args, tokenizer, file_path, labels=label_list, set_type="val")
+
+                logger.info("  Num examples = %d", len(eval_examples))
+                logger.info("  Batch size = %d", args.eval_batch_size)
 
         global_step = 0
 
@@ -478,21 +544,42 @@ def main():
             save_model(epoch, args, model)
             
             if args.do_eval:
-                eval_epoch(model, eval_dataloader, label_list, device)
+                if data_name.startswith('joint'):
+                    for ed, eval_dataloader in enumerate(eval_dataloaders_list):
+                        logger.info("  Domain", str(ed))
+                        eval_epoch(model, eval_dataloader, label_list, device)
+                else:
+                    eval_epoch(model, eval_dataloader, label_list, device)
 
-        if args.do_eval:
+        if args.do_test:
             logger.info("***Results on test***")
-            eval_epoch(model, test_dataloader, label_list, device)
+            if data_name.startswith('joint'):
+                for td, test_dataloader in enumerate(test_dataloaders_list):
+                    logger.info("  Domain", str(td))
+                    eval_epoch(model, test_dataloader, label_list, device)
+            else:
+                eval_epoch(model, test_dataloader, label_list, device)
     else:
         if args.init_model:
-            eval_epoch(model, test_dataloader, label_list, device)
+            if data_name.startswith('joint'):
+                for td, test_dataloader in enumerate(test_dataloaders_list):
+                    logger.info("  Domain", str(td))
+                    eval_epoch(model, test_dataloader, label_list, device)
+            else:
+                eval_epoch(model, test_dataloader, label_list, device)
         else:
             for epoch in range(args.num_train_epochs):
                 # Load a trained model that you have fine-tuned
                 model = load_model(epoch, args, num_labels, task_config, device)
                 if not model:
                     break
-                eval_epoch(model, test_dataloader, label_list, device)
+                
+                if data_name.startswith('joint'):
+                    for td, test_dataloader in enumerate(test_dataloaders_list):
+                        logger.info("  Domain", str(td))
+                        eval_epoch(model, test_dataloader, label_list, device)
+                else:
+                    eval_epoch(model, test_dataloader, label_list, device)
 
 if __name__ == "__main__":
     try:
