@@ -391,6 +391,9 @@ for i in ["2014", "2015", "2016"]:
 for i in range(10):
     DATASET_DICT["twt{}".format(i+1)] = {"train_file":"twitter_{}_train.txt".format(i+1), "valid_file":"twitter_{}_test.gold.txt".format(i+1), "test_file":"twitter_{}_test.gold.txt".format(i+1)}
 
+DATASET_DICT["joint"] = {
+    "train_file":"joint_2014_train.txt"}
+
 def main():
     global logger
     args, task_config = parse_input_parameter()
@@ -407,6 +410,7 @@ def main():
     device, n_gpu = init_device(args)
 
     data_name = args.data_name.lower()
+
     if data_name in DATASET_DICT:
         args.train_file = DATASET_DICT[data_name]["train_file"]
         args.valid_file = DATASET_DICT[data_name]["valid_file"]
@@ -435,6 +439,7 @@ def main():
 
     # Generate test dataset
     file_path = os.path.join(args.data_dir, args.test_file)
+    
     test_dataloader, test_examples = DATALOADER_DICT[task_name]["eval"](args, tokenizer, file_path,
                                                                         labels=label_list, set_type="test")
     logger.info("***** Running test *****")
