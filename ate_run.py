@@ -81,8 +81,8 @@ def parse_input_parameter():
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
             args.gradient_accumulation_steps))
-    if not args.do_train and not args.do_eval:
-        raise ValueError("At least one of `do_train` or `do_eval` must be True.")
+    if not args.do_train and not args.do_test:
+        raise ValueError("At least one of `do_train` or `do_test` must be True.")
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
 
@@ -433,8 +433,7 @@ def main():
     data_name = args.data_name.lower()
 
     if data_name in DATASET_DICT:
-        if args.do_train:
-            args.train_file = DATASET_DICT[data_name]["train_file"]
+        args.train_file = DATASET_DICT[data_name]["train_file"]
 
         if args.do_eval:
             args.valid_file = DATASET_DICT[data_name]["valid_file"]
@@ -442,8 +441,7 @@ def main():
         if args.do_test:
             args.test_file = DATASET_DICT[data_name]["test_file"]
     else:
-        if args.do_train:
-            assert args.train_file is not None
+        assert args.train_file is not None
         
         if args.do_eval:
             assert args.valid_file is not None
@@ -560,7 +558,7 @@ def main():
                     eval_epoch(model, test_dataloader, label_list, device)
             else:
                 eval_epoch(model, test_dataloader, label_list, device)
-    else:
+    elif args.do_test:
         if args.init_model:
             if data_name.startswith('joint'):
                 for td, test_dataloader in enumerate(test_dataloaders_list):
