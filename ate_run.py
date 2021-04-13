@@ -476,7 +476,9 @@ def main():
                                                optimizer, global_step, num_train_optimization_steps)
             logger.info("Epoch %d/%s Finished, Train Loss: %f", epoch + 1, args.num_train_epochs, tr_loss)
             save_model(epoch, args, model)
-            eval_epoch(model, eval_dataloader, label_list, device)
+            
+            if args.do_eval:
+                eval_epoch(model, eval_dataloader, label_list, device)
 
         if args.do_eval:
             logger.info("***Results on test***")
