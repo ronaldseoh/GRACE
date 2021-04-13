@@ -57,6 +57,7 @@ def parse_input_parameter():
                         help="The maximum total input sequence length after WordPiece tokenization. \nSequences longer than this will be truncated, and sequences shorter \nthan this will be padded.")
     parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
     parser.add_argument("--do_eval", action='store_true', help="Whether to run eval on the dev set.")
+    parser.add_argument("--do_test", action='store_true', help="Whether to run eval on the TEST set.")
     parser.add_argument("--do_lower_case", action='store_true', help="Set this flag if you are using an uncased model.")
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
@@ -601,10 +602,6 @@ def main():
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
 
-
-
-
-
         if args.do_eval:
             logger.info("***** Running evaluation *****")
             if data_name.startswith('joint'):
@@ -655,7 +652,8 @@ def main():
                     eval_epoch(model, test_dataloader, label_tp_list, device)
             else:
                 eval_epoch(model, test_dataloader, label_tp_list, device)
-    else:
+
+    elif args.do_test:
         if args.init_model:
             if data_name.startswith('joint'):
                 for td, test_dataloader in enumerate(test_dataloaders_list):
