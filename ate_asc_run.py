@@ -522,8 +522,7 @@ def main():
     data_name = args.data_name.lower()
 
     if data_name in DATASET_DICT:
-        if args.do_train:
-            args.train_file = DATASET_DICT[data_name]["train_file"]
+        args.train_file = DATASET_DICT[data_name]["train_file"]
 
         if args.do_eval:
             args.valid_file = DATASET_DICT[data_name]["valid_file"]
@@ -531,8 +530,7 @@ def main():
         if args.do_test:
             args.test_file = DATASET_DICT[data_name]["test_file"]
     else:
-        if args.do_train:
-            assert args.train_file is not None
+        assert args.train_file is not None
         
         if args.do_eval:
             assert args.valid_file is not None
