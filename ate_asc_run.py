@@ -91,8 +91,8 @@ def parse_input_parameter():
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
             args.gradient_accumulation_steps))
-    if not args.do_train and not args.do_eval:
-        raise ValueError("At least one of `do_train` or `do_eval` must be True.")
+    if not args.do_train and not args.do_test:
+        raise ValueError("At least one of `do_train` or `do_test` must be True.")
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
